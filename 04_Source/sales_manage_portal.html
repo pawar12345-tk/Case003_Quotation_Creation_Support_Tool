@@ -1,37 +1,1652 @@
-<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>売上管理ポータル</title><style>
-:root{--bg:#f4f7fb;--panel:#fff;--line:#cfd8e3;--primary:#2563eb;--head:#bfe2ea;--sub:#e5f6fa;--sec:#b9dde6;--pink:#f7dede;--danger:#dc2626;--ok:#059669;--muted:#667085}*{box-sizing:border-box}body{margin:0;font-family:"Segoe UI","Meiryo",sans-serif;background:var(--bg);color:#1f2937}header{background:linear-gradient(135deg,#1d4ed8,#2563eb 60%,#60a5fa);color:#fff;padding:18px 24px}.hrow{display:flex;justify-content:space-between;align-items:flex-end}.title{font-size:24px;font-weight:700}.sub{font-size:12px;opacity:.9;margin-top:4px}.ver{font-size:12px}.panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:13px;margin:12px 14px;box-shadow:0 1px 5px rgba(16,24,40,.06)}button{border:0;border-radius:9px;background:var(--primary);color:#fff;padding:9px 13px;font-weight:700;cursor:pointer}button.ghost{background:#eef2ff;color:#1d4ed8;border:1px solid #c7d2fe}button.secondary{background:#475569}button:disabled{background:#cbd5e1}.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.status{margin-left:auto;font-size:12px;color:var(--muted)}.grid{display:grid;grid-template-columns:1.7fr repeat(8,minmax(115px,.8fr));gap:9px;align-items:end}.field label{display:block;font-size:12px;color:var(--muted);margin-bottom:4px}.field input,.field select{height:36px;width:100%;border:1px solid var(--line);border-radius:9px;padding:6px 9px}.tabs{display:flex;gap:6px;border-bottom:1px solid var(--line);margin-bottom:10px;flex-wrap:wrap}.tab{background:#f8fafc;color:#334155;border:1px solid var(--line);border-bottom:0;border-radius:10px 10px 0 0}.tab.active{background:#e5edff;color:#1d4ed8}.cards{display:grid;grid-template-columns:repeat(6,1fr);gap:10px}.card{border:1px solid var(--line);border-radius:12px;padding:10px;background:linear-gradient(180deg,#fff,#f8fafc)}.lab{font-size:12px;color:var(--muted)}.val{font-size:20px;font-weight:800;margin-top:3px}.note,.hint{font-size:11px;color:var(--muted)}.positive{color:var(--ok)}.negative{color:var(--danger)}.neutral{color:#334155}.chip{display:inline-flex;background:#f1f5f9;border:1px solid var(--line);border-radius:999px;padding:4px 8px;margin-right:5px;margin-top:7px;font-size:12px;color:#475569}.manual{display:none;border-top:1px dashed var(--line);margin-top:10px;padding-top:10px}.manual.open{display:block}.manual-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.table-tools{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}.tablebox{overflow:auto;border:1px solid var(--line);border-radius:12px;background:#fff;max-height:66vh}.tbl{border-collapse:separate;border-spacing:0;width:100%;min-width:1500px;font-size:12px}.tbl th,.tbl td{border-right:1px solid #8aa2ad;border-bottom:1px dotted #8aa2ad;padding:5px 7px;white-space:nowrap}.tbl th{position:sticky;top:0;z-index:2;background:var(--head);text-align:center;font-weight:800}.tbl thead tr:nth-child(2) th{top:28px;background:var(--sub)}.name{min-width:240px;max-width:360px;overflow:hidden;text-overflow:ellipsis}.num{text-align:right;font-variant-numeric:tabular-nums}.total{background:#eef8fb!important;font-weight:800}.section td{background:var(--sec)!important;font-weight:800}.section.pink td{background:var(--pink)!important}.diff{background:#f7fbfd}.collapsible.collapsed{height:8px;padding:0;margin-top:8px;overflow:hidden;opacity:.16;transition:.15s}.collapsible.collapsed:hover{height:auto;padding:13px;opacity:1}.period{display:none}.period.show{display:flex}@media(max-width:1400px){.grid{grid-template-columns:1fr 1fr 1fr}.cards{grid-template-columns:1fr 1fr 1fr}}@media(max-width:900px){.grid,.cards,.manual-grid{grid-template-columns:1fr}.status{margin-left:0}}
-</style></head><body><header><div class="hrow"><div><div class="title">売上管理ポータル</div><div class="sub">今回・前回・予算の最新CSVを読込み、原価元帳確認／差異確認／月別_グループ計を表示します。</div></div><div class="ver">v1.5</div></div></header>
-<section id="operationPanel" class="panel"><div class="row"><button id="folderBtn">作業フォルダ選択</button><button id="manualToggle" class="ghost">手動読込</button><button id="resetBtn" class="ghost" disabled>条件クリア</button><button id="exportBtn" class="secondary" disabled>表示一覧CSV出力</button><span id="status" class="status">作業フォルダを選択してください。</span></div><div id="manual" class="manual"><div class="manual-grid"><div class="field"><label>今回見通し CSV</label><input id="fCur" type="file" accept=".csv"></div><div class="field"><label>前回見通し CSV</label><input id="fPre" type="file" accept=".csv"></div><div class="field"><label>予算 CSV</label><input id="fBud" type="file" accept=".csv"></div></div><div class="row" style="margin-top:8px"><button id="manualLoad" class="secondary">手動ファイルを読込</button></div></div></section>
-<section id="filterPanel" class="panel collapsible"><div class="grid"><div class="field"><label>PJ名／PJコード検索</label><input id="q" list="hist" placeholder="クリックで履歴表示" disabled><datalist id="hist"></datalist></div><div class="field"><label>集計項目</label><select id="metric" disabled></select></div><div class="field"><label>年度</label><select id="fy" disabled><option value="all">すべて</option></select></div><div class="field"><label>チーム</label><select id="team" disabled><option value="all">すべて</option></select></div><div class="field"><label>スポット／ストック</label><select id="stock" disabled><option value="all">すべて</option></select></div><div class="field"><label>受注ランク</label><select id="rank" disabled><option value="all">すべて</option></select></div><div class="field"><label>取引先</label><select id="cust" disabled><option value="all">すべて</option></select></div><div class="field"><label>PJ期間 開始</label><input id="pjs" type="date" disabled></div><div class="field"><label>PJ期間 終了</label><input id="pje" type="date" disabled></div></div><div id="chips"></div></section>
-<section class="panel"><div class="tabs"><button class="tab active" data-tab="current">今回</button><button class="tab" data-tab="diff">前回差異</button><button class="tab" data-tab="budget">予算</button><button class="tab" data-tab="alerts">自動抽出</button><button class="tab" data-tab="groupMonthly">月別_グループ計</button></div><div id="period" class="row period"><span class="hint">表示期間：</span><label><input type="radio" name="period" value="upper" checked> 上期</label><label><input type="radio" name="period" value="lower"> 下期</label><label><input type="radio" name="period" value="all"> 通期</label></div></section>
-<section id="summaryPanel" class="panel collapsible"><div class="cards"><div class="card"><div class="lab">読込状況</div><div id="loaded" class="val" style="font-size:14px">-</div><div id="files" class="note">-</div></div><div class="card"><div class="lab">表示明細</div><div id="rows" class="val">-</div><div class="note">フィルタ後</div></div><div class="card"><div class="lab">表示件数</div><div id="projects" class="val">-</div><div class="note">PJ／グループ項目</div></div><div class="card"><div class="lab">年月数</div><div id="months" class="val">-</div><div class="note">横持ち列</div></div><div class="card"><div class="lab">表示合計</div><div id="total" class="val">-</div><div class="note">選択タブ・項目</div></div><div class="card"><div class="lab">警告件数</div><div id="alerts" class="val">-</div><div class="note">赤字・悪化等</div></div></div></section>
-<section class="panel"><div class="table-tools"><div><b id="tableTitle">集計一覧</b></div><div class="hint">月別_グループ計は選択期間のみ描画します。</div></div><div class="tablebox"><table id="tbl" class="tbl"><thead></thead><tbody></tbody></table></div></section>
-<script>
-const E=id=>document.getElementById(id);const state={data:{current:[],previous:[],budget:[]},headers:[],tab:'current',metric:'営業利益',months:[],pivot:[],rows:[],files:{},hist:JSON.parse(localStorage.getItem('salesPortalSearchHistory')||'[]'),cache:null};
-const labels={current:'今回',diff:'前回差異',budget:'予算',alerts:'自動抽出',groupMonthly:'月別_グループ計'};const folders={current:'今回見通し',previous:'前回見通し',budget:'予算'};
-const itemOrder=['売上計','部門売上','進行基準売上','内部売上','内部進行基準売上','その他売上','ネット売上','売上原価(原価）','売上原価(原価)','人件費（原価+販管）','外注費計(原価+販管）','外注費（一括外注費）','請負外注費','準委任外注費','派遣外注費','外注費（引入外注費）','経費(原価+販管）','機械費','機械費(他XaaS仕入)','保守料','減価償却費','家賃地代','設備費','電力費','通信回線使用料','備品消耗品費','旅費交通費','海外出張費','広告宣伝費','交際接待費','会議費','寄付金','教育費','求人採用費','支払手数料','租税公課等','その他経費','経費(費用振替)（原価+販管）','振替労務費','振替DC利用料（機械）','振替DC利用料（設備）','振替DC利用料（回線）','振替施設費','振替インフラ費','振替その他経費','振替サービス型共通費','費用移管','内部仕入計','内部仕入','仕入原価','原価差額','製造間接費','仕掛残','期首仕掛残','期末仕掛残','ソフ仮残','期首ソフ仮残','期末ソフ仮残','他勘定振替','ソフトウェア資産','その他調整額','受注損失引当金','繰入','繰戻','売上総利益(GAIA)','販売費','販売費(発生額)','部門販売費','一般管理費','一般管理費(発生額)','部門一般管理費','売上総利益(TITAN)','販管費配賦','事業部配賦','事業本部配賦','統括本部配賦','事業貢献利益','本社配賦','営業利益'];
-const sectionSet=new Set(['売上計','ネット売上','売上原価(原価）','売上原価(原価)','経費(原価+販管）','経費(費用振替)（原価+販管）','費用移管','内部仕入計','原価差額','製造間接費','仕掛残','ソフ仮残','他勘定振替','受注損失引当金','売上総利益(GAIA)','一般管理費','売上総利益(TITAN)','販管費配賦','事業貢献利益','本社配賦','営業利益']);const pinkSet=new Set(['ネット売上','売上原価(原価）','売上原価(原価)','売上総利益(TITAN)','販管費配賦','事業貢献利益','営業利益']);
-function norm(s){return String(s??'').replace(/^\uFEFF/,'').trim()}function cleanName(s){return norm(s).replace(/^[\s　]+/,'')}function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}function num(v){const s=String(v??'').replace(/,/g,'').replace(/"/g,'').trim();if(!s||s==='-')return 0;const n=Number(s);return Number.isFinite(n)?n:0}function fmt(n){return Number(n||0).toLocaleString('ja-JP')}function cls(n){return Number(n)<0?'negative':Number(n)>0?'positive':'neutral'}
-function fyOf(ym){const s=String(ym);if(!/^\d{6}$/.test(s))return'';const y=+s.slice(0,4),m=+s.slice(4,6);return String(m>=4?y:y-1)}function ymd(iso){return iso?Number(iso.replaceAll('-','')):null}function team(r){const v=norm(r['分析テキスト８']);if(!v)return'該当なし';return /^\d+$/.test(v)?v+'G':v}function stock(r){return norm(r['分析コード５名'])||norm(r['分析コード５'])||'該当なし'}function rank(r){return norm(r['受注ランク'])||'該当なし'}function cust(r){return norm(r['取引先名'])||'該当なし'}
-function parseCSV(t){const rows=[];let row=[],cur='',q=false;for(let i=0;i<t.length;i++){const c=t[i],n=t[i+1];if(q){if(c==='"'&&n==='"'){cur+='"';i++}else if(c==='"')q=false;else cur+=c}else{if(c==='"')q=true;else if(c===','){row.push(cur);cur=''}else if(c==='\n'){row.push(cur);rows.push(row);row=[];cur=''}else if(c==='\r'){}else cur+=c}}if(cur!==''||row.length){row.push(cur);rows.push(row)}return rows.filter(r=>r.some(x=>norm(x)))}
-async function readText(file){const buf=await file.arrayBuffer();let t=new TextDecoder('shift_jis').decode(buf);if(!t.includes('プロジェクトコード'))t=new TextDecoder('utf-8').decode(buf);return t}function toRows(t){const m=parseCSV(t);if(!m.length)return[];const h=m[0].map(norm);for(const c of ['年月','プロジェクトコード','プロジェクト名'])if(!h.includes(c))throw new Error('必須列不足: '+c);if(!state.headers.length)state.headers=h;return m.slice(1).map(r=>{const o={};h.forEach((x,i)=>o[x]=r[i]??'');return o})}
-async function load(kind,file){if(!file)return;state.data[kind]=toRows(await readText(file));state.files[kind]=file.name;state.cache=null}async function latestCsv(dir){let latest=null;for await(const [name,h]of dir.entries()){if(h.kind==='file'&&/\.csv$/i.test(name)){const f=await h.getFile();if(!latest||f.lastModified>latest.lastModified)latest=f}}if(!latest)throw new Error('CSVファイルがありません');return latest}
-async function loadFolder(){if(!window.showDirectoryPicker){alert('このブラウザでは作業フォルダ選択に対応していません。手動読込を利用してください。');E('manual').classList.add('open');return}try{E('status').textContent='読込中...';const root=await window.showDirectoryPicker();for(const k of ['current','previous','budget']){const d=await root.getDirectoryHandle(folders[k]);await load(k,await latestCsv(d))}afterLoad()}catch(e){console.error(e);alert('読込に失敗しました。\n'+e.message);E('status').textContent='読込失敗'}}async function loadManual(){try{await load('current',E('fCur').files[0]);await load('previous',E('fPre').files[0]);await load('budget',E('fBud').files[0]);afterLoad()}catch(e){alert(e.message)}}
-function uniq(fn){const s=new Set();Object.values(state.data).flat().forEach(r=>{const v=fn(r);if(v)s.add(v)});return [...s].sort((a,b)=>String(a).localeCompare(String(b),'ja'))}function opts(el,vals){el.innerHTML='<option value="all">すべて</option>';vals.forEach(v=>el.add(new Option(v,v)))}
-function metricColumnMap(){const m=new Map();state.headers.forEach(h=>m.set(cleanName(h),h));return m}function availableMetrics(){const mp=metricColumnMap();return itemOrder.filter(x=>mp.has(x))}
-function afterLoad(){const metrics=availableMetrics();E('metric').innerHTML='';metrics.forEach(m=>E('metric').add(new Option(m,m)));if([...E('metric').options].some(o=>o.value==='営業利益'))E('metric').value='営業利益';state.metric=E('metric').value;opts(E('fy'),uniq(r=>fyOf(r['年月'])));opts(E('team'),uniq(team));opts(E('stock'),uniq(stock));opts(E('rank'),uniq(rank));opts(E('cust'),uniq(cust));updateHist();['q','metric','fy','team','stock','rank','cust','pjs','pje','resetBtn','exportBtn'].forEach(id=>E(id).disabled=false);E('loaded').textContent=new Date().toLocaleString('ja-JP');E('files').textContent=`今回:${state.files.current||'-'} / 前回:${state.files.previous||'-'} / 予算:${state.files.budget||'-'}`;E('status').textContent='読込完了';E('filterPanel').classList.add('collapsed');E('summaryPanel').classList.add('collapsed');apply()}
-function updateHist(){const pj=uniq(r=>norm(r['プロジェクト名'])).slice(0,300);E('hist').innerHTML=[...new Set([...state.hist,...pj])].map(v=>`<option value="${esc(v)}"></option>`).join('')}function saveHist(){const q=norm(E('q').value);if(!q)return;state.hist=[q,...state.hist.filter(x=>x!==q)].slice(0,30);localStorage.setItem('salesPortalSearchHistory',JSON.stringify(state.hist));updateHist()}
-function filtered(base){const q=norm(E('q').value).toLowerCase(),fs=ymd(E('pjs').value),fe=ymd(E('pje').value);return base.filter(r=>{const ps=Number(norm(r['PJ開始日']).replace(/\D/g,''))||0,pe=Number(norm(r['PJ終了日']).replace(/\D/g,''))||99999999;return(E('fy').value==='all'||fyOf(r['年月'])===E('fy').value)&&(E('team').value==='all'||team(r)===E('team').value)&&(E('stock').value==='all'||stock(r)===E('stock').value)&&(E('rank').value==='all'||rank(r)===E('rank').value)&&(E('cust').value==='all'||cust(r)===E('cust').value)&&(!q||(norm(r['プロジェクト名'])+' '+norm(r['プロジェクトコード'])).toLowerCase().includes(q))&&(!fs||pe>=fs)&&(!fe||ps<=fe)})}
-function getVal(r,metric,mp=metricColumnMap()){return num(r[mp.get(metric)||metric])}function aggregate(rows){const mp=metricColumnMap(),months=[...new Set(rows.map(r=>norm(r['年月'])).filter(Boolean))].sort(),map=new Map();for(const r of rows){const code=norm(r['プロジェクトコード']),name=norm(r['プロジェクト名']),key=code+'\t'+name;if(!map.has(key))map.set(key,{code,name,months:{},total:0,details:[]});const it=map.get(key),m=norm(r['年月']),v=getVal(r,state.metric,mp);it.months[m]=(it.months[m]||0)+v;it.total+=v;it.details.push(r)}return{months,pivot:[...map.values()].sort((a,b)=>Math.abs(b.total)-Math.abs(a.total))}}
-function diff(cur,pre){const c=aggregate(cur),p=aggregate(pre),months=[...new Set([...c.months,...p.months])].sort(),keys=new Set([...c.pivot,...p.pivot].map(x=>x.code+'\t'+x.name));const cm=new Map(c.pivot.map(x=>[x.code+'\t'+x.name,x])),pm=new Map(p.pivot.map(x=>[x.code+'\t'+x.name,x]));return{months,pivot:[...keys].map(k=>{const a=cm.get(k)||{},b=pm.get(k)||{},o={code:a.code||b.code,name:a.name||b.name,months:{},total:(a.total||0)-(b.total||0),details:a.details||b.details||[]};months.forEach(m=>o.months[m]=(a.months?.[m]||0)-(b.months?.[m]||0));return o}).sort((a,b)=>Math.abs(b.total)-Math.abs(a.total))}}
-function chooseFY(){if(E('fy').value!=='all')return Number(E('fy').value);const yrs=[...new Set([...state.data.current,...state.data.previous,...state.data.budget].map(r=>fyOf(r['年月'])).filter(Boolean))].sort();return Number(yrs[0]||new Date().getFullYear())}function allFYMonths(y){return [`${y}04`,`${y}05`,`${y}06`,`${y}07`,`${y}08`,`${y}09`,`${y}10`,`${y}11`,`${y}12`,`${y+1}01`,`${y+1}02`,`${y+1}03`]}function selectedMonths(){const y=chooseFY(),p=document.querySelector('input[name="period"]:checked')?.value||'upper',all=allFYMonths(y);if(p==='upper')return{months:all.slice(0,6),total:'上期計'};if(p==='lower')return{months:all.slice(6,12),total:'下期計'};return{months:all,total:'通期計'}}function unitDiv(){const all=[...state.data.current,...state.data.previous,...state.data.budget],mp=metricColumnMap();const t=all.slice(0,5000).reduce((s,r)=>s+Math.abs(getVal(r,'営業利益',mp)),0);return t>10000?1000000:1}function fm(n){return (Number(n||0)/unitDiv()).toLocaleString('ja-JP',{minimumFractionDigits:1,maximumFractionDigits:1})}
-function buildGroupCache(){const mp=metricColumnMap(),metrics=availableMetrics(),rows={current:filtered(state.data.current),previous:filtered(state.data.previous),budget:filtered(state.data.budget)};function ag(rs){const map=new Map();for(const r of rs){const g=team(r),mo=norm(r['年月']);for(const met of metrics){const v=getVal(r,met,mp);if(!v)continue;const key=g+' -- '+met;if(!map.has(key))map.set(key,{group:g,item:met,vals:{}});const vals=map.get(key).vals;vals[mo]=(vals[mo]||0)+v}}return map}state.cache={metrics,cur:ag(rows.current),pre:ag(rows.previous),bud:ag(rows.budget),rowCount:rows.current.length}}
-function groupMonthly(){buildGroupCache();const {months,total}=selectedMonths(),keys=new Set([...state.cache.cur.keys(),...state.cache.pre.keys(),...state.cache.bud.keys()]);const metrics=state.cache.metrics;const arr=[...keys].map(k=>state.cache.cur.get(k)||state.cache.pre.get(k)||state.cache.bud.get(k)).sort((a,b)=>{const gn=g=>{const x=String(g).match(/^(\d+)/);return x?Number(x[1]):999};return gn(a.group)!==gn(b.group)?gn(a.group)-gn(b.group):metrics.indexOf(a.item)-metrics.indexOf(b.item)});const pivot=[];for(const base of arr){const k=base.group+' -- '+base.item,c=state.cache.cur.get(k)||{vals:{}},p=state.cache.pre.get(k)||{vals:{}},b=state.cache.bud.get(k)||{vals:{}},vals={};for(const mo of months){const cv=c.vals[mo]||0,pv=p.vals[mo]||0,bv=b.vals[mo]||0;vals[mo]={budget:bv,previous:pv,current:cv,budgetDiff:cv-bv,previousDiff:cv-pv}}const sum=key=>months.reduce((s,mo)=>s+(vals[mo]?.[key]||0),0);vals[total]={budget:sum('budget'),previous:sum('previous'),current:sum('current'),budgetDiff:sum('budgetDiff'),previousDiff:sum('previousDiff')};if(Object.values(vals).some(v=>v.budget||v.previous||v.current))pivot.push({group:base.group,item:base.item,vals,total:vals[total].current})}return{title:'月別_グループ計',months:[...months,total],pivot,rows:{length:state.cache.rowCount},isGroup:true}}
-function alerts(c,p){const cur=aggregate(c),di=diff(c,p);return{title:'自動抽出',months:di.months,rows:c,isAlerts:true,pivot:[...di.pivot.slice(0,20).map(x=>({...x,alertType:'差異上位'})),...cur.pivot.filter(x=>x.total<0).slice(0,20).map(x=>({...x,alertType:'赤字案件'})),...di.pivot.filter(x=>x.total<0).slice(0,20).map(x=>({...x,alertType:'前回比大幅悪化'}))]}}
-function view(){state.metric=E('metric').value||state.metric;const c=filtered(state.data.current),p=filtered(state.data.previous),b=filtered(state.data.budget);if(state.tab==='current')return{...aggregate(c),rows:c,title:'今回'};if(state.tab==='budget')return{...aggregate(b),rows:b,title:'予算'};if(state.tab==='diff')return{...diff(c,p),rows:c,title:'前回差異'};if(state.tab==='groupMonthly')return groupMonthly();return alerts(c,p)}function apply(){const v=view();state.months=v.months;state.pivot=v.pivot;state.rows=v.rows;cards();chips();render(v)}
-function cards(){E('rows').textContent=(state.rows.length||0).toLocaleString('ja-JP');E('projects').textContent=(state.pivot.length||0).toLocaleString('ja-JP');E('months').textContent=(state.months.length||0).toLocaleString('ja-JP');const t=state.pivot.reduce((s,r)=>s+(r.total||0),0);E('total').textContent=fmt(t);E('total').className='val '+cls(t);E('alerts').textContent=alerts(filtered(state.data.current),filtered(state.data.previous)).pivot.length.toLocaleString('ja-JP')}function chips(){const items=[['タブ',labels[state.tab]],['項目',state.metric],['年度',E('fy').value],['チーム',E('team').value],['期間',document.querySelector('input[name="period"]:checked')?.parentElement?.textContent.trim()||''],['区分',E('stock').value],['ランク',E('rank').value],['取引先',E('cust').value]].filter(x=>x[1]&&x[1]!=='all');E('chips').innerHTML=items.map(x=>`<span class="chip">${esc(x[0])}: ${esc(x[1])}</span>`).join('')}
-function render(v){if(v.isGroup)return renderGroup(v);E('tableTitle').textContent=v.title+' 一覧';const th=E('tbl').querySelector('thead'),tb=E('tbl').querySelector('tbody'),ah=v.isAlerts?'<th>抽出区分</th>':'';th.innerHTML='<tr>'+ah+'<th>プロジェクト名</th><th>PJコード</th>'+v.months.map(m=>`<th>${m}</th>`).join('')+'<th class="total">総計</th></tr>';tb.innerHTML=v.pivot.map(r=>`<tr>${v.isAlerts?`<td>${esc(r.alertType)}</td>`:''}<td class="name" title="${esc(r.name)}">${esc(r.name)}</td><td>${esc(r.code)}</td>`+v.months.map(m=>`<td class="num ${cls(r.months[m])}">${fmt(r.months[m])}</td>`).join('')+`<td class="num total ${cls(r.total)}">${fmt(r.total)}</td></tr>`).join('')||'<tr><td colspan="99">表示対象がありません。</td></tr>'}
-function renderGroup(v){E('tableTitle').textContent='月別_グループ計';const th=E('tbl').querySelector('thead'),tb=E('tbl').querySelector('tbody');th.innerHTML='<tr><th rowspan="2">グループ</th><th rowspan="2">項目</th>'+v.months.map(m=>`<th colspan="5">${esc(m)}</th>`).join('')+'</tr><tr>'+v.months.map(()=>'<th>予算</th><th>前回</th><th>今回</th><th class="diff">予算比</th><th class="diff">前回比</th>').join('')+'</tr>';tb.innerHTML=v.pivot.map(r=>{const cn=cleanName(r.item),sec=sectionSet.has(cn),pink=pinkSet.has(cn);return `<tr class="${sec?'section':''} ${pink?'pink':''}"><td>${esc(r.group)}</td><td class="name">${esc(cn)}</td>`+v.months.map(m=>{const x=r.vals[m]||{};return `<td class="num">${fm(x.budget)}</td><td class="num">${fm(x.previous)}</td><td class="num">${fm(x.current)}</td><td class="num diff ${cls(x.budgetDiff)}">${fm(x.budgetDiff)}</td><td class="num diff ${cls(x.previousDiff)}">${fm(x.previousDiff)}</td>`}).join('')+'</tr>'}).join('')||'<tr><td colspan="99">表示対象がありません。</td></tr>'}
-function exportCsv(){const v=view();let lines;if(v.isGroup){const heads=['グループ','項目'];v.months.forEach(m=>heads.push(`${m}_予算(M)`,`${m}_前回(M)`,`${m}_今回(M)`,`${m}_予算比(M)`,`${m}_前回比(M)`));lines=[heads,...v.pivot.map(r=>{const row=[r.group,cleanName(r.item)];v.months.forEach(m=>{const x=r.vals[m]||{};row.push(fm(x.budget),fm(x.previous),fm(x.current),fm(x.budgetDiff),fm(x.previousDiff))});return row})]}else{lines=[[(v.isAlerts?'抽出区分,':'')+'プロジェクト名','PJコード',...v.months,'総計'],...v.pivot.map(r=>[...(v.isAlerts?[r.alertType]:[]),r.name,r.code,...v.months.map(m=>r.months[m]||0),r.total])]}const csv=lines.map(r=>r.map(x=>'"'+String(x??'').replace(/"/g,'""')+'"').join(',')).join('\r\n');const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'}));a.download=`売上管理_${labels[state.tab]}_${new Date().toISOString().slice(0,10).replaceAll('-','')}.csv`;a.click();URL.revokeObjectURL(a.href)}
-E('folderBtn').onclick=loadFolder;E('manualToggle').onclick=()=>E('manual').classList.toggle('open');E('manualLoad').onclick=loadManual;E('exportBtn').onclick=exportCsv;E('resetBtn').onclick=()=>{['fy','team','stock','rank','cust'].forEach(id=>E(id).value='all');['q','pjs','pje'].forEach(id=>E(id).value='');state.cache=null;apply()};['metric','fy','team','stock','rank','cust','pjs','pje'].forEach(id=>E(id).onchange=()=>{state.cache=null;apply()});document.querySelectorAll('input[name="period"]').forEach(r=>r.onchange=apply);E('q').oninput=()=>{state.cache=null;clearTimeout(window.t);window.t=setTimeout(apply,150)};E('q').onblur=saveHist;document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));b.classList.add('active');state.tab=b.dataset.tab;E('period').classList.toggle('show',state.tab==='groupMonthly');apply()});
-</script></body></html>
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>売上管理ポータル</title>
+  <style>
+    :root {
+      --bg: #f6f7f9;
+      --surface: #ffffff;
+      --surface-2: #f9fafb;
+      --line: #d7dde5;
+      --line-strong: #98a7b8;
+      --text: #172033;
+      --muted: #657287;
+      --primary: #1769aa;
+      --primary-soft: #e7f1f8;
+      --accent: #2b8a68;
+      --accent-soft: #e6f4ef;
+      --warn: #a15c07;
+      --warn-soft: #fff4df;
+      --danger: #b42318;
+      --danger-soft: #fdecea;
+      --head: #dcebf3;
+      --subhead: #eef6fa;
+      --section: #e7f0f3;
+      --profit: #f8e6e6;
+      --shadow: 0 1px 3px rgba(18, 28, 45, .08);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: "Segoe UI", "Meiryo", "Yu Gothic", sans-serif;
+      font-size: 14px;
+    }
+
+    button,
+    input,
+    select {
+      font: inherit;
+    }
+
+    button {
+      min-height: 36px;
+      border: 1px solid transparent;
+      border-radius: 6px;
+      padding: 7px 12px;
+      background: var(--primary);
+      color: #fff;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    button:hover:not(:disabled) {
+      filter: brightness(.97);
+    }
+
+    button:disabled {
+      cursor: not-allowed;
+      background: #d2d9e2;
+      color: #7b8796;
+    }
+
+    button.secondary {
+      background: #48576a;
+    }
+
+    button.ghost {
+      background: #fff;
+      color: var(--primary);
+      border-color: #a8c5dd;
+    }
+
+    header {
+      background: #102f4c;
+      color: #fff;
+      border-bottom: 4px solid #2b8a68;
+    }
+
+    .header-inner {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 18px;
+      align-items: end;
+      padding: 18px 22px 16px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 24px;
+      line-height: 1.2;
+      letter-spacing: 0;
+    }
+
+    .lead {
+      margin-top: 5px;
+      color: #d8e7f1;
+      font-size: 12px;
+    }
+
+    .version {
+      color: #d8e7f1;
+      font-size: 12px;
+      text-align: right;
+    }
+
+    main {
+      padding: 12px 14px 20px;
+    }
+
+    .top-drawer {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      max-height: 34px;
+      overflow: hidden;
+      border: 1px solid #b8c6d3;
+      border-radius: 8px;
+      background: rgba(246, 247, 249, .96);
+      box-shadow: 0 2px 8px rgba(18, 28, 45, .12);
+      transition: max-height .18s ease, box-shadow .18s ease;
+      margin-bottom: 12px;
+    }
+
+    .top-drawer:hover,
+    .top-drawer:focus-within {
+      max-height: calc(100vh - 24px);
+      overflow: auto;
+      box-shadow: 0 8px 22px rgba(18, 28, 45, .18);
+    }
+
+    .drawer-peek {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      min-height: 32px;
+      padding: 6px 10px;
+      border-bottom: 1px solid var(--line);
+      background: #edf3f7;
+      color: #334155;
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .drawer-peek span:last-child {
+      color: var(--muted);
+      font-weight: 700;
+    }
+
+    .panel {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+      margin-bottom: 12px;
+    }
+
+    .top-drawer .panel {
+      margin: 10px;
+      box-shadow: none;
+    }
+
+    .panel-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: center;
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--line);
+      background: var(--surface-2);
+      border-radius: 8px 8px 0 0;
+    }
+
+    .panel-title {
+      font-weight: 800;
+    }
+
+    .panel-body {
+      padding: 12px;
+    }
+
+    .toolbar {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .status {
+      margin-left: auto;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .manual-loader {
+      display: none;
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px dashed var(--line);
+    }
+
+    .manual-loader.open {
+      display: block;
+    }
+
+    .file-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(190px, 1fr));
+      gap: 10px;
+    }
+
+    .filter-grid {
+      display: grid;
+      grid-template-columns: minmax(260px, 1.5fr) repeat(7, minmax(130px, 1fr));
+      gap: 10px;
+      align-items: end;
+    }
+
+    .field label {
+      display: block;
+      margin-bottom: 4px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .field input,
+    .field select {
+      width: 100%;
+      height: 36px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: #fff;
+      color: var(--text);
+      padding: 6px 8px;
+    }
+
+    .field input:disabled,
+    .field select:disabled {
+      background: #edf1f5;
+      color: #8a95a4;
+    }
+
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(120px, 1fr));
+      gap: 10px;
+    }
+
+    .kpi {
+      border-right: 1px solid var(--line);
+      padding: 2px 10px 4px 0;
+    }
+
+    .kpi:last-child {
+      border-right: 0;
+    }
+
+    .kpi-label {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .kpi-value {
+      margin-top: 2px;
+      font-size: 22px;
+      line-height: 1.2;
+      font-weight: 850;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .kpi-note {
+      margin-top: 2px;
+      color: var(--muted);
+      font-size: 11px;
+      min-height: 15px;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 5px;
+      flex-wrap: wrap;
+    }
+
+    .tab {
+      background: #fff;
+      color: #39485b;
+      border-color: var(--line);
+    }
+
+    .tab.active {
+      background: var(--primary-soft);
+      color: #0d5185;
+      border-color: #9fc3dc;
+    }
+
+    .period-controls {
+      display: none;
+      align-items: center;
+      gap: 12px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .period-controls.show {
+      display: flex;
+    }
+
+    .chip-row {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-top: 10px;
+    }
+
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      min-height: 24px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: #f5f7fa;
+      color: #475568;
+      padding: 3px 9px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .message {
+      display: none;
+      margin-top: 10px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 8px 10px;
+      font-size: 12px;
+      white-space: pre-wrap;
+    }
+
+    .message.show {
+      display: block;
+    }
+
+    .message.info {
+      background: var(--primary-soft);
+      border-color: #b8d4e8;
+      color: #174c73;
+    }
+
+    .message.warn {
+      background: var(--warn-soft);
+      border-color: #f0c477;
+      color: #744000;
+    }
+
+    .message.error {
+      background: var(--danger-soft);
+      border-color: #f2ada7;
+      color: var(--danger);
+    }
+
+    .table-tools {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .table-title {
+      font-size: 16px;
+      font-weight: 850;
+    }
+
+    .table-note {
+      margin-top: 2px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .tablebox {
+      max-height: 66vh;
+      overflow: auto;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+    }
+
+    table {
+      border-collapse: separate;
+      border-spacing: 0;
+      width: 100%;
+      min-width: 1280px;
+      font-size: 12px;
+    }
+
+    th,
+    td {
+      border-right: 1px solid var(--line-strong);
+      border-bottom: 1px solid var(--line);
+      padding: 6px 8px;
+      white-space: nowrap;
+      vertical-align: middle;
+    }
+
+    th {
+      position: sticky;
+      top: 0;
+      z-index: 2;
+      background: var(--head);
+      text-align: center;
+      font-weight: 850;
+    }
+
+    thead tr:nth-child(2) th {
+      top: 30px;
+      background: var(--subhead);
+    }
+
+    tbody tr:hover td {
+      background: #f7fbff;
+    }
+
+    .name {
+      min-width: 260px;
+      max-width: 420px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .code {
+      min-width: 110px;
+    }
+
+    .num {
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .total {
+      background: #eef5f8;
+      font-weight: 850;
+    }
+
+    .section-row td {
+      background: var(--section);
+      font-weight: 850;
+    }
+
+    .profit-row td {
+      background: var(--profit);
+      font-weight: 850;
+    }
+
+    .positive {
+      color: var(--accent);
+    }
+
+    .negative {
+      color: var(--danger);
+    }
+
+    .muted {
+      color: var(--muted);
+    }
+
+    @media (max-width: 1400px) {
+      .filter-grid {
+        grid-template-columns: repeat(4, minmax(150px, 1fr));
+      }
+
+      .kpi-grid {
+        grid-template-columns: repeat(3, 1fr);
+      }
+    }
+
+    @media (max-width: 900px) {
+      .header-inner,
+      .table-tools {
+        grid-template-columns: 1fr;
+      }
+
+      .version {
+        text-align: left;
+      }
+
+      .filter-grid,
+      .file-grid,
+      .kpi-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .kpi {
+        border-right: 0;
+        border-bottom: 1px solid var(--line);
+        padding-bottom: 8px;
+      }
+
+      .status {
+        width: 100%;
+        margin-left: 0;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="header-inner">
+      <div>
+        <h1>売上管理ポータル</h1>
+        <div class="lead">原価元帳CSVから、今回見通し・前回見通し・予算の差異と月別グループ計を確認します。</div>
+      </div>
+      <div class="version">v2.0 / single file</div>
+    </div>
+  </header>
+
+  <main>
+    <div class="top-drawer" tabindex="0" aria-label="操作・条件・集計パネル">
+      <div class="drawer-peek">
+        <span>操作・条件・集計</span>
+        <span>マウスオーバーで表示</span>
+      </div>
+
+    <section class="panel" aria-label="読込操作">
+      <div class="panel-body">
+        <div class="toolbar">
+          <button id="folderBtn">作業フォルダ選択</button>
+          <button id="manualToggle" class="ghost">手動読込</button>
+          <button id="resetBtn" class="ghost" disabled>条件クリア</button>
+          <button id="exportBtn" class="secondary" disabled>CSV出力</button>
+          <span id="status" class="status">作業フォルダを選択してください。</span>
+        </div>
+
+        <div id="manualLoader" class="manual-loader">
+          <div class="file-grid">
+            <div class="field">
+              <label for="fileCurrent">今回見通し CSV</label>
+              <input id="fileCurrent" type="file" accept=".csv,text/csv">
+            </div>
+            <div class="field">
+              <label for="filePrevious">前回見通し CSV</label>
+              <input id="filePrevious" type="file" accept=".csv,text/csv">
+            </div>
+            <div class="field">
+              <label for="fileBudget">予算 CSV</label>
+              <input id="fileBudget" type="file" accept=".csv,text/csv">
+            </div>
+          </div>
+          <div class="toolbar" style="margin-top:10px">
+            <button id="manualLoadBtn" class="secondary">選択CSVを読込</button>
+          </div>
+        </div>
+        <div id="message" class="message"></div>
+      </div>
+    </section>
+
+    <section class="panel" aria-label="検索条件">
+      <div class="panel-head">
+        <div class="panel-title">検索条件</div>
+        <div class="muted" id="loadedFiles">未読込</div>
+      </div>
+      <div class="panel-body">
+        <div class="filter-grid">
+          <div class="field">
+            <label for="query">PJ名／PJコード検索</label>
+            <input id="query" list="searchHistory" placeholder="プロジェクト名・コードで検索" disabled>
+            <datalist id="searchHistory"></datalist>
+          </div>
+          <div class="field">
+            <label for="metric">集計項目</label>
+            <select id="metric" disabled></select>
+          </div>
+          <div class="field">
+            <label for="fiscalYear">年度</label>
+            <select id="fiscalYear" disabled></select>
+          </div>
+          <div class="field">
+            <label for="team">チーム</label>
+            <select id="team" disabled></select>
+          </div>
+          <div class="field">
+            <label for="businessType">スポット／ストック</label>
+            <select id="businessType" disabled></select>
+          </div>
+          <div class="field">
+            <label for="rank">受注ランク</label>
+            <select id="rank" disabled></select>
+          </div>
+          <div class="field">
+            <label for="customer">取引先</label>
+            <select id="customer" disabled></select>
+          </div>
+          <div class="field">
+            <label for="limit">表示件数</label>
+            <select id="limit" disabled>
+              <option value="100">上位100件</option>
+              <option value="300">上位300件</option>
+              <option value="1000">上位1000件</option>
+              <option value="all">すべて</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="projectStart">PJ期間 開始</label>
+            <input id="projectStart" type="date" disabled>
+          </div>
+          <div class="field">
+            <label for="projectEnd">PJ期間 終了</label>
+            <input id="projectEnd" type="date" disabled>
+          </div>
+          <div class="field">
+            <label for="unit">金額単位</label>
+            <select id="unit" disabled>
+              <option value="1">円</option>
+              <option value="1000">千円</option>
+              <option value="1000000" selected>百万円</option>
+            </select>
+          </div>
+        </div>
+        <div id="chips" class="chip-row"></div>
+      </div>
+    </section>
+
+    <section class="panel" aria-label="サマリ">
+      <div class="panel-body">
+        <div class="kpi-grid">
+          <div class="kpi">
+            <div class="kpi-label">読込行数</div>
+            <div id="kpiLoaded" class="kpi-value">-</div>
+            <div class="kpi-note">今回／前回／予算</div>
+          </div>
+          <div class="kpi">
+            <div class="kpi-label">表示明細</div>
+            <div id="kpiRows" class="kpi-value">-</div>
+            <div class="kpi-note">フィルタ後</div>
+          </div>
+          <div class="kpi">
+            <div class="kpi-label">表示件数</div>
+            <div id="kpiProjects" class="kpi-value">-</div>
+            <div class="kpi-note">PJ／グループ項目</div>
+          </div>
+          <div class="kpi">
+            <div class="kpi-label">対象年月</div>
+            <div id="kpiMonths" class="kpi-value">-</div>
+            <div class="kpi-note">横持ち列</div>
+          </div>
+          <div class="kpi">
+            <div class="kpi-label">表示合計</div>
+            <div id="kpiTotal" class="kpi-value">-</div>
+            <div id="kpiTotalNote" class="kpi-note">選択タブ・項目</div>
+          </div>
+          <div class="kpi">
+            <div class="kpi-label">要確認</div>
+            <div id="kpiAlerts" class="kpi-value">-</div>
+            <div class="kpi-note">赤字・悪化・差異上位</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel" aria-label="表示切替">
+      <div class="panel-body">
+        <div class="toolbar">
+          <div class="tabs">
+            <button class="tab active" data-tab="current">今回</button>
+            <button class="tab" data-tab="diff">前回差異</button>
+            <button class="tab" data-tab="budget">予算</button>
+            <button class="tab" data-tab="alerts">自動抽出</button>
+            <button class="tab" data-tab="groupMonthly">月別グループ計</button>
+          </div>
+          <div id="periodControls" class="period-controls">
+            <span>表示期間</span>
+            <label><input type="radio" name="period" value="upper" checked> 上期</label>
+            <label><input type="radio" name="period" value="lower"> 下期</label>
+            <label><input type="radio" name="period" value="all"> 通期</label>
+          </div>
+        </div>
+      </div>
+    </section>
+    </div>
+
+    <section class="panel" aria-label="集計一覧">
+      <div class="panel-head">
+        <div>
+          <div id="tableTitle" class="table-title">集計一覧</div>
+          <div id="tableNote" class="table-note">CSV読込後に一覧を表示します。</div>
+        </div>
+        <div class="muted" id="renderInfo">-</div>
+      </div>
+      <div class="panel-body">
+        <div class="tablebox">
+          <table id="resultTable">
+            <thead></thead>
+            <tbody>
+              <tr><td>作業フォルダを選択するか、手動読込でCSVを指定してください。</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+    const DB_NAME = 'salesManagePortal';
+    const DB_STORE = 'settings';
+    const DB_FOLDER_KEY = 'workFolderHandle';
+
+    const DATASETS = {
+      current: { label: '今回', folder: '今回見通し' },
+      previous: { label: '前回', folder: '前回見通し' },
+      budget: { label: '予算', folder: '予算' }
+    };
+
+    const TAB_LABELS = {
+      current: '今回',
+      diff: '前回差異',
+      budget: '予算',
+      alerts: '自動抽出',
+      groupMonthly: '月別グループ計'
+    };
+
+    const METRIC_ORDER = [
+      '期初受注残', '仮受注', '受注', '受注移管', '期末受注残',
+      '売上計', '部門売上', '進行基準売上', '内部売上', '内部進行基準売上', 'その他売上',
+      '売上原価', '人件費', '外注費計', '外注費（一括外注費）', '請負外注費', '準委任外注費', '派遣外注費',
+      '外注費（引入外注費）', '経費', '機械費', '機械費(他XaaS仕入)', '保守料', '減価償却費', '家賃地代',
+      '設備費', '電力費', '通信回線使用料', '備品消耗品費', '旅費交通費', '海外出張費', '広告宣伝費',
+      '交際接待費', '会議費', '寄付金', '教育費', '求人採用費', '支払手数料', '租税公課等', 'その他経費',
+      '経費(費用振替)', '振替労務費', '振替DC利用料（機械）', '振替DC利用料（設備）', '振替DC利用料（回線）',
+      '振替施設費', '振替インフラ費', '振替その他経費', '振替サービス型共通費', '費用移管', '仕入原価',
+      '内部仕入計', '内部仕入', '内部進行仕入', '原価差額', '製造間接費', '仕掛残', '期首仕掛残', '期末仕掛残',
+      'ソフ仮残', '期首ソフ仮残', '期末ソフ仮残', '他勘定振替', 'ソフトウェア資産', 'その他調整額',
+      '受注損失引当金', '繰入', '繰戻', '売上総利益', '販売費', '販売費(発生額)', '部門販売費',
+      '一般管理費', '一般管理費(発生額)', '部門一般管理費', '販管費配賦', '事業部配賦', '事業本部配賦',
+      '統括本部配賦', '事業貢献利益', '本社配賦', '営業利益'
+    ];
+
+    const SECTION_METRICS = new Set([
+      '売上計', '売上原価', '経費', '経費(費用振替)', '費用移管', '内部仕入計', '原価差額', '製造間接費',
+      '仕掛残', 'ソフ仮残', '他勘定振替', '受注損失引当金', '売上総利益', '一般管理費', '販管費配賦',
+      '事業貢献利益', '本社配賦', '営業利益'
+    ]);
+
+    const PROFIT_METRICS = new Set(['売上総利益', '販管費配賦', '事業貢献利益', '営業利益']);
+
+    const state = {
+      data: { current: [], previous: [], budget: [] },
+      headers: [],
+      metricIndex: new Map(),
+      metrics: [],
+      files: {},
+      activeTab: 'current',
+      currentView: null,
+      searchHistory: safeJson(localStorage.getItem('salesPortalSearchHistory'), [])
+    };
+
+    const controls = [
+      'query', 'metric', 'fiscalYear', 'team', 'businessType', 'rank', 'customer',
+      'limit', 'projectStart', 'projectEnd', 'unit', 'resetBtn', 'exportBtn'
+    ];
+
+    function safeJson(value, fallback) {
+      try {
+        return JSON.parse(value) || fallback;
+      } catch {
+        return fallback;
+      }
+    }
+
+    function normalize(value) {
+      return String(value ?? '').replace(/^\uFEFF/, '').trim();
+    }
+
+    function cleanHeader(value) {
+      return normalize(value).replace(/^[\s　]+/, '');
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? '').replace(/[&<>"']/g, (char) => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;'
+      }[char]));
+    }
+
+    function toNumber(value) {
+      const text = String(value ?? '').replace(/,/g, '').replace(/"/g, '').trim();
+      if (!text || text === '-') return 0;
+      const number = Number(text);
+      return Number.isFinite(number) ? number : 0;
+    }
+
+    function formatInteger(value) {
+      return Number(value || 0).toLocaleString('ja-JP');
+    }
+
+    function unitLabel() {
+      const unit = Number($('unit').value || 1);
+      if (unit === 1000000) return '百万円';
+      if (unit === 1000) return '千円';
+      return '円';
+    }
+
+    function formatMoney(value) {
+      const unit = Number($('unit').value || 1);
+      const scaled = Number(value || 0) / unit;
+      const options = unit === 1
+        ? { maximumFractionDigits: 0 }
+        : { minimumFractionDigits: 1, maximumFractionDigits: 1 };
+      return scaled.toLocaleString('ja-JP', options);
+    }
+
+    function valueClass(value) {
+      if (Number(value) < 0) return 'negative';
+      if (Number(value) > 0) return 'positive';
+      return '';
+    }
+
+    function fiscalYearOf(month) {
+      const text = String(month ?? '');
+      if (!/^\d{6}$/.test(text)) return '';
+      const year = Number(text.slice(0, 4));
+      const monthNumber = Number(text.slice(4, 6));
+      return String(monthNumber >= 4 ? year : year - 1);
+    }
+
+    function displayMonth(month) {
+      const text = String(month ?? '');
+      return /^\d{6}$/.test(text) ? `${text.slice(0, 4)}/${text.slice(4, 6)}` : text;
+    }
+
+    function compactDate(value) {
+      const text = normalize(value).replace(/\D/g, '');
+      return text ? Number(text) : 0;
+    }
+
+    function inputDateNumber(value) {
+      return value ? Number(value.replaceAll('-', '')) : null;
+    }
+
+    function teamOf(row) {
+      const value = normalize(row['分析テキスト８']);
+      if (!value) return '該当なし';
+      return /^\d+$/.test(value) ? `${value}G` : value;
+    }
+
+    function businessTypeOf(row) {
+      return normalize(row['分析コード５名']) || normalize(row['分析コード５']) || '該当なし';
+    }
+
+    function rankOf(row) {
+      return normalize(row['受注ランク']) || '該当なし';
+    }
+
+    function customerOf(row) {
+      return normalize(row['取引先名']) || '該当なし';
+    }
+
+    function parseCsv(text) {
+      const rows = [];
+      let row = [];
+      let cell = '';
+      let quoted = false;
+
+      for (let i = 0; i < text.length; i += 1) {
+        const char = text[i];
+        const next = text[i + 1];
+
+        if (quoted) {
+          if (char === '"' && next === '"') {
+            cell += '"';
+            i += 1;
+          } else if (char === '"') {
+            quoted = false;
+          } else {
+            cell += char;
+          }
+          continue;
+        }
+
+        if (char === '"') {
+          quoted = true;
+        } else if (char === ',') {
+          row.push(cell);
+          cell = '';
+        } else if (char === '\n') {
+          row.push(cell);
+          rows.push(row);
+          row = [];
+          cell = '';
+        } else if (char !== '\r') {
+          cell += char;
+        }
+      }
+
+      if (cell !== '' || row.length) {
+        row.push(cell);
+        rows.push(row);
+      }
+
+      return rows.filter((items) => items.some((item) => normalize(item)));
+    }
+
+    async function readCsvText(file) {
+      const buffer = await file.arrayBuffer();
+      const sjis = new TextDecoder('shift-jis').decode(buffer);
+      if (sjis.includes('プロジェクトコード') && sjis.includes('年月')) return sjis;
+      return new TextDecoder('utf-8').decode(buffer);
+    }
+
+    function rowsFromCsv(text) {
+      const matrix = parseCsv(text);
+      if (!matrix.length) return [];
+
+      const headers = matrix[0].map(normalize);
+      const required = ['年月', 'プロジェクトコード', 'プロジェクト名'];
+      const missing = required.filter((column) => !headers.includes(column));
+      if (missing.length) {
+        throw new Error(`必須列が不足しています: ${missing.join(', ')}`);
+      }
+
+      if (!state.headers.length) {
+        state.headers = headers;
+        rebuildMetricIndex(headers);
+      }
+
+      return matrix.slice(1).map((items) => {
+        const row = {};
+        headers.forEach((header, index) => {
+          row[header] = items[index] ?? '';
+        });
+        return row;
+      });
+    }
+
+    function rebuildMetricIndex(headers) {
+      const index = new Map();
+      headers.forEach((header) => {
+        const key = cleanHeader(header);
+        if (!index.has(key)) index.set(key, []);
+        index.get(key).push(header);
+      });
+      state.metricIndex = index;
+      state.metrics = METRIC_ORDER.filter((metric) => index.has(metric));
+    }
+
+    function metricValue(row, metric = $('metric').value) {
+      const columns = state.metricIndex.get(metric) || [metric];
+      return columns.reduce((sum, column) => sum + toNumber(row[column]), 0);
+    }
+
+    async function loadFile(kind, file) {
+      if (!file) {
+        state.data[kind] = [];
+        delete state.files[kind];
+        return;
+      }
+      const text = await readCsvText(file);
+      state.data[kind] = rowsFromCsv(text);
+      state.files[kind] = file.name;
+    }
+
+    async function latestCsvInDirectory(directoryHandle) {
+      let latest = null;
+      for await (const [name, handle] of directoryHandle.entries()) {
+        if (handle.kind !== 'file' || !/\.csv$/i.test(name)) continue;
+        const file = await handle.getFile();
+        if (!latest || file.lastModified > latest.lastModified) latest = file;
+      }
+      if (!latest) throw new Error('CSVファイルが見つかりません。');
+      return latest;
+    }
+
+    function openSettingsDb() {
+      return new Promise((resolve, reject) => {
+        const request = indexedDB.open(DB_NAME, 1);
+        request.onupgradeneeded = () => {
+          request.result.createObjectStore(DB_STORE);
+        };
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+      });
+    }
+
+    async function saveWorkFolderHandle(handle) {
+      if (!('indexedDB' in window)) return;
+      const db = await openSettingsDb();
+      await new Promise((resolve, reject) => {
+        const transaction = db.transaction(DB_STORE, 'readwrite');
+        transaction.objectStore(DB_STORE).put(handle, DB_FOLDER_KEY);
+        transaction.oncomplete = resolve;
+        transaction.onerror = () => reject(transaction.error);
+      });
+      db.close();
+    }
+
+    async function getSavedWorkFolderHandle() {
+      if (!('indexedDB' in window)) return null;
+      const db = await openSettingsDb();
+      const handle = await new Promise((resolve, reject) => {
+        const transaction = db.transaction(DB_STORE, 'readonly');
+        const request = transaction.objectStore(DB_STORE).get(DB_FOLDER_KEY);
+        request.onsuccess = () => resolve(request.result || null);
+        request.onerror = () => reject(request.error);
+      });
+      db.close();
+      return handle;
+    }
+
+    async function verifyReadPermission(handle, requestWhenNeeded = false) {
+      if (!handle || !handle.queryPermission) return false;
+      const options = { mode: 'read' };
+      if (await handle.queryPermission(options) === 'granted') return true;
+      if (!requestWhenNeeded || !handle.requestPermission) return false;
+      return await handle.requestPermission(options) === 'granted';
+    }
+
+    async function loadFromDirectoryHandle(root, options = {}) {
+      state.headers = [];
+      for (const kind of Object.keys(DATASETS)) {
+        const directory = await root.getDirectoryHandle(DATASETS[kind].folder);
+        const file = await latestCsvInDirectory(directory);
+        await loadFile(kind, file);
+      }
+
+      if (options.remember) {
+        await saveWorkFolderHandle(root);
+      }
+
+      finishLoading(options.message || '読込が完了しました。');
+    }
+
+    async function loadFromFolder() {
+      if (!window.showDirectoryPicker) {
+        showMessage('このブラウザでは作業フォルダ選択に対応していません。手動読込を利用してください。', 'warn');
+        $('manualLoader').classList.add('open');
+        return;
+      }
+
+      try {
+        setStatus('読込中...');
+        showMessage('', 'info');
+        const root = await window.showDirectoryPicker();
+        await loadFromDirectoryHandle(root, { remember: true, message: '読込が完了しました。次回からこの作業フォルダを自動読込します。' });
+      } catch (error) {
+        console.error(error);
+        setStatus('読込失敗');
+        showMessage(`読込に失敗しました。\n${error.message}`, 'error');
+      }
+    }
+
+    async function restoreSavedFolder() {
+      try {
+        if (!window.showDirectoryPicker || !('indexedDB' in window)) return;
+        const handle = await getSavedWorkFolderHandle();
+        if (!handle) return;
+
+        setStatus('保存済み作業フォルダを確認中...');
+        const permitted = await verifyReadPermission(handle, true);
+        if (!permitted) {
+          setStatus('保存済み作業フォルダの再許可が必要です。');
+          showMessage('保存済み作業フォルダがあります。ブラウザの許可が切れているため、作業フォルダ選択から再度許可してください。', 'warn');
+          return;
+        }
+
+        setStatus('保存済み作業フォルダから読込中...');
+        await loadFromDirectoryHandle(handle, { remember: false, message: '保存済み作業フォルダから自動読込しました。' });
+      } catch (error) {
+        console.error(error);
+        setStatus('自動読込失敗');
+        showMessage(`保存済み作業フォルダの自動読込に失敗しました。\n${error.message}\n作業フォルダ選択から再指定してください。`, 'warn');
+      }
+    }
+
+    async function loadFromManualFiles() {
+      try {
+        setStatus('読込中...');
+        showMessage('', 'info');
+        state.headers = [];
+        await loadFile('current', $('fileCurrent').files[0]);
+        await loadFile('previous', $('filePrevious').files[0]);
+        await loadFile('budget', $('fileBudget').files[0]);
+
+        if (!state.data.current.length && !state.data.previous.length && !state.data.budget.length) {
+          throw new Error('CSVが選択されていません。');
+        }
+
+        finishLoading();
+      } catch (error) {
+        console.error(error);
+        setStatus('読込失敗');
+        showMessage(`読込に失敗しました。\n${error.message}`, 'error');
+      }
+    }
+
+    function finishLoading(message = '読込が完了しました。') {
+      populateMetricOptions();
+      populateFilterOptions();
+      populateSearchHistory();
+      controls.forEach((id) => {
+        $(id).disabled = false;
+      });
+      $('loadedFiles').textContent = Object.keys(DATASETS)
+        .map((kind) => `${DATASETS[kind].label}: ${state.files[kind] || '-'}`)
+        .join(' / ');
+      setStatus('読込完了');
+      showMessage(`${message}\n金額列 ${state.metrics.length} 項目を集計できます。`, 'info');
+      applyView();
+    }
+
+    function populateMetricOptions() {
+      const metric = $('metric');
+      metric.innerHTML = '';
+      state.metrics.forEach((name) => metric.add(new Option(name, name)));
+      metric.value = state.metrics.includes('営業利益') ? '営業利益' : state.metrics[0] || '';
+    }
+
+    function uniqueValues(rows, getter) {
+      const values = new Set();
+      rows.forEach((row) => {
+        const value = getter(row);
+        if (value) values.add(value);
+      });
+      return Array.from(values).sort((a, b) => String(a).localeCompare(String(b), 'ja'));
+    }
+
+    function allRows() {
+      return Object.values(state.data).flat();
+    }
+
+    function setSelectOptions(select, values) {
+      select.innerHTML = '<option value="all">すべて</option>';
+      values.forEach((value) => select.add(new Option(value, value)));
+    }
+
+    function populateFilterOptions() {
+      const rows = allRows();
+      setSelectOptions($('fiscalYear'), uniqueValues(rows, (row) => fiscalYearOf(row['年月'])));
+      setSelectOptions($('team'), uniqueValues(rows, teamOf));
+      setSelectOptions($('businessType'), uniqueValues(rows, businessTypeOf));
+      setSelectOptions($('rank'), uniqueValues(rows, rankOf));
+      setSelectOptions($('customer'), uniqueValues(rows, customerOf));
+    }
+
+    function populateSearchHistory() {
+      const projectNames = uniqueValues(allRows(), (row) => normalize(row['プロジェクト名'])).slice(0, 300);
+      const values = Array.from(new Set([...state.searchHistory, ...projectNames]));
+      $('searchHistory').innerHTML = values.map((value) => `<option value="${escapeHtml(value)}"></option>`).join('');
+    }
+
+    function saveSearchHistory() {
+      const query = normalize($('query').value);
+      if (!query) return;
+      state.searchHistory = [query, ...state.searchHistory.filter((item) => item !== query)].slice(0, 30);
+      localStorage.setItem('salesPortalSearchHistory', JSON.stringify(state.searchHistory));
+      populateSearchHistory();
+    }
+
+    function selectedFilters() {
+      return {
+        query: normalize($('query').value).toLowerCase(),
+        fiscalYear: $('fiscalYear').value,
+        team: $('team').value,
+        businessType: $('businessType').value,
+        rank: $('rank').value,
+        customer: $('customer').value,
+        projectStart: inputDateNumber($('projectStart').value),
+        projectEnd: inputDateNumber($('projectEnd').value)
+      };
+    }
+
+    function filteredRows(rows) {
+      const filters = selectedFilters();
+      return rows.filter((row) => {
+        const projectStart = compactDate(row['PJ開始日']);
+        const projectEnd = compactDate(row['PJ終了日']) || 99999999;
+        const target = `${normalize(row['プロジェクト名'])} ${normalize(row['プロジェクトコード'])}`.toLowerCase();
+
+        return (!filters.query || target.includes(filters.query))
+          && (filters.fiscalYear === 'all' || fiscalYearOf(row['年月']) === filters.fiscalYear)
+          && (filters.team === 'all' || teamOf(row) === filters.team)
+          && (filters.businessType === 'all' || businessTypeOf(row) === filters.businessType)
+          && (filters.rank === 'all' || rankOf(row) === filters.rank)
+          && (filters.customer === 'all' || customerOf(row) === filters.customer)
+          && (!filters.projectStart || projectEnd >= filters.projectStart)
+          && (!filters.projectEnd || projectStart <= filters.projectEnd);
+      });
+    }
+
+    function monthsFrom(rows) {
+      return Array.from(new Set(rows.map((row) => normalize(row['年月'])).filter(Boolean))).sort();
+    }
+
+    function aggregateProjects(rows) {
+      const months = monthsFrom(rows);
+      const projectMap = new Map();
+
+      rows.forEach((row) => {
+        const code = normalize(row['プロジェクトコード']);
+        const name = normalize(row['プロジェクト名']);
+        const key = `${code}\t${name}`;
+        const month = normalize(row['年月']);
+        const value = metricValue(row);
+
+        if (!projectMap.has(key)) {
+          projectMap.set(key, {
+            code,
+            name,
+            team: teamOf(row),
+            customer: customerOf(row),
+            rank: rankOf(row),
+            months: {},
+            total: 0,
+            sourceRows: 0
+          });
+        }
+
+        const item = projectMap.get(key);
+        item.months[month] = (item.months[month] || 0) + value;
+        item.total += value;
+        item.sourceRows += 1;
+      });
+
+      return {
+        months,
+        rows: Array.from(projectMap.values()).sort((a, b) => Math.abs(b.total) - Math.abs(a.total))
+      };
+    }
+
+    function diffProjects(currentRows, previousRows) {
+      const current = aggregateProjects(currentRows);
+      const previous = aggregateProjects(previousRows);
+      const months = Array.from(new Set([...current.months, ...previous.months])).sort();
+      const currentMap = new Map(current.rows.map((row) => [`${row.code}\t${row.name}`, row]));
+      const previousMap = new Map(previous.rows.map((row) => [`${row.code}\t${row.name}`, row]));
+      const keys = Array.from(new Set([...currentMap.keys(), ...previousMap.keys()]));
+
+      return {
+        months,
+        rows: keys.map((key) => {
+          const currentItem = currentMap.get(key) || {};
+          const previousItem = previousMap.get(key) || {};
+          const monthsValue = {};
+
+          months.forEach((month) => {
+            monthsValue[month] = (currentItem.months?.[month] || 0) - (previousItem.months?.[month] || 0);
+          });
+
+          return {
+            code: currentItem.code || previousItem.code,
+            name: currentItem.name || previousItem.name,
+            team: currentItem.team || previousItem.team || '',
+            customer: currentItem.customer || previousItem.customer || '',
+            rank: currentItem.rank || previousItem.rank || '',
+            months: monthsValue,
+            total: (currentItem.total || 0) - (previousItem.total || 0),
+            sourceRows: currentItem.sourceRows || previousItem.sourceRows || 0
+          };
+        }).sort((a, b) => Math.abs(b.total) - Math.abs(a.total))
+      };
+    }
+
+    function buildAlerts(currentRows, previousRows) {
+      const current = aggregateProjects(currentRows);
+      const diff = diffProjects(currentRows, previousRows);
+      const alerts = [];
+      const seen = new Set();
+
+      function addRows(type, rows) {
+        rows.forEach((row) => {
+          const key = `${type}\t${row.code}\t${row.name}`;
+          if (seen.has(key)) return;
+          seen.add(key);
+          alerts.push({ ...row, alertType: type });
+        });
+      }
+
+      addRows('差異上位', diff.rows.slice(0, 25));
+      addRows('赤字案件', current.rows.filter((row) => row.total < 0).slice(0, 25));
+      addRows('前回比悪化', diff.rows.filter((row) => row.total < 0).slice(0, 25));
+
+      return {
+        months: diff.months,
+        rows: alerts
+      };
+    }
+
+    function selectedFiscalYear() {
+      if ($('fiscalYear').value !== 'all') return Number($('fiscalYear').value);
+      const years = uniqueValues(allRows(), (row) => fiscalYearOf(row['年月']));
+      return Number(years[0] || new Date().getFullYear());
+    }
+
+    function fiscalMonths(year) {
+      return [
+        `${year}04`, `${year}05`, `${year}06`, `${year}07`, `${year}08`, `${year}09`,
+        `${year}10`, `${year}11`, `${year}12`, `${year + 1}01`, `${year + 1}02`, `${year + 1}03`
+      ];
+    }
+
+    function selectedPeriodMonths() {
+      const months = fiscalMonths(selectedFiscalYear());
+      const period = document.querySelector('input[name="period"]:checked')?.value || 'upper';
+      if (period === 'upper') return { months: months.slice(0, 6), totalLabel: '上期計' };
+      if (period === 'lower') return { months: months.slice(6), totalLabel: '下期計' };
+      return { months, totalLabel: '通期計' };
+    }
+
+    function aggregateGroupMonthly() {
+      const currentRows = filteredRows(state.data.current);
+      const previousRows = filteredRows(state.data.previous);
+      const budgetRows = filteredRows(state.data.budget);
+      const { months, totalLabel } = selectedPeriodMonths();
+
+      function aggregate(rows) {
+        const map = new Map();
+        rows.forEach((row) => {
+          const group = teamOf(row);
+          const month = normalize(row['年月']);
+          state.metrics.forEach((metric) => {
+            const value = metricValue(row, metric);
+            if (!value) return;
+            const key = `${group}\t${metric}`;
+            if (!map.has(key)) map.set(key, { group, metric, values: {} });
+            const item = map.get(key);
+            item.values[month] = (item.values[month] || 0) + value;
+          });
+        });
+        return map;
+      }
+
+      const current = aggregate(currentRows);
+      const previous = aggregate(previousRows);
+      const budget = aggregate(budgetRows);
+      const keys = Array.from(new Set([...current.keys(), ...previous.keys(), ...budget.keys()]));
+
+      const rows = keys.map((key) => {
+        const base = current.get(key) || previous.get(key) || budget.get(key);
+        const values = {};
+
+        months.forEach((month) => {
+          const budgetValue = budget.get(key)?.values[month] || 0;
+          const previousValue = previous.get(key)?.values[month] || 0;
+          const currentValue = current.get(key)?.values[month] || 0;
+          values[month] = {
+            budget: budgetValue,
+            previous: previousValue,
+            current: currentValue,
+            budgetDiff: currentValue - budgetValue,
+            previousDiff: currentValue - previousValue
+          };
+        });
+
+        values[totalLabel] = months.reduce((sum, month) => ({
+          budget: sum.budget + values[month].budget,
+          previous: sum.previous + values[month].previous,
+          current: sum.current + values[month].current,
+          budgetDiff: sum.budgetDiff + values[month].budgetDiff,
+          previousDiff: sum.previousDiff + values[month].previousDiff
+        }), { budget: 0, previous: 0, current: 0, budgetDiff: 0, previousDiff: 0 });
+
+        return {
+          group: base.group,
+          metric: base.metric,
+          values,
+          total: values[totalLabel].current
+        };
+      }).filter((row) => Object.values(row.values).some((value) => value.current || value.previous || value.budget));
+
+      rows.sort((a, b) => {
+        const groupNumber = (value) => {
+          const match = String(value).match(/^(\d+)/);
+          return match ? Number(match[1]) : 9999;
+        };
+        if (groupNumber(a.group) !== groupNumber(b.group)) return groupNumber(a.group) - groupNumber(b.group);
+        return state.metrics.indexOf(a.metric) - state.metrics.indexOf(b.metric);
+      });
+
+      return {
+        title: '月別グループ計',
+        sourceRows: currentRows.length,
+        months: [...months, totalLabel],
+        rows,
+        type: 'group'
+      };
+    }
+
+    function currentView() {
+      const currentRows = filteredRows(state.data.current);
+      const previousRows = filteredRows(state.data.previous);
+      const budgetRows = filteredRows(state.data.budget);
+
+      if (state.activeTab === 'current') {
+        const result = aggregateProjects(currentRows);
+        return { title: '今回', sourceRows: currentRows.length, months: result.months, rows: result.rows, type: 'project' };
+      }
+
+      if (state.activeTab === 'budget') {
+        const result = aggregateProjects(budgetRows);
+        return { title: '予算', sourceRows: budgetRows.length, months: result.months, rows: result.rows, type: 'project' };
+      }
+
+      if (state.activeTab === 'diff') {
+        const result = diffProjects(currentRows, previousRows);
+        return { title: '前回差異', sourceRows: currentRows.length, months: result.months, rows: result.rows, type: 'project' };
+      }
+
+      if (state.activeTab === 'alerts') {
+        const result = buildAlerts(currentRows, previousRows);
+        return { title: '自動抽出', sourceRows: currentRows.length, months: result.months, rows: result.rows, type: 'alerts' };
+      }
+
+      return aggregateGroupMonthly();
+    }
+
+    function limitedRows(rows) {
+      const limit = $('limit').value;
+      if (limit === 'all') return rows;
+      return rows.slice(0, Number(limit));
+    }
+
+    function applyView() {
+      if (!state.headers.length) return;
+      const view = currentView();
+      state.currentView = view;
+      updateKpis(view);
+      updateChips();
+      renderTable(view);
+    }
+
+    function updateKpis(view) {
+      const loaded = Object.keys(DATASETS).map((kind) => state.data[kind].length).join(' / ');
+      const total = view.rows.reduce((sum, row) => sum + (row.total || 0), 0);
+      const alertCount = buildAlerts(filteredRows(state.data.current), filteredRows(state.data.previous)).rows.length;
+
+      $('kpiLoaded').textContent = loaded;
+      $('kpiRows').textContent = formatInteger(view.sourceRows || 0);
+      $('kpiProjects').textContent = formatInteger(view.rows.length || 0);
+      $('kpiMonths').textContent = formatInteger(view.months.length || 0);
+      $('kpiTotal').textContent = formatMoney(total);
+      $('kpiTotal').className = `kpi-value ${valueClass(total)}`;
+      $('kpiTotalNote').textContent = `${TAB_LABELS[state.activeTab]} / ${$('metric').value || '-' } / ${unitLabel()}`;
+      $('kpiAlerts').textContent = formatInteger(alertCount);
+    }
+
+    function updateChips() {
+      const chips = [
+        ['表示', TAB_LABELS[state.activeTab]],
+        ['項目', $('metric').value],
+        ['年度', $('fiscalYear').value],
+        ['チーム', $('team').value],
+        ['区分', $('businessType').value],
+        ['ランク', $('rank').value],
+        ['取引先', $('customer').value],
+        ['単位', unitLabel()]
+      ].filter(([, value]) => value && value !== 'all');
+
+      $('chips').innerHTML = chips
+        .map(([label, value]) => `<span class="chip">${escapeHtml(label)}: ${escapeHtml(value)}</span>`)
+        .join('');
+    }
+
+    function renderTable(view) {
+      const rows = limitedRows(view.rows);
+      $('tableTitle').textContent = `${view.title} 一覧`;
+      $('tableNote').textContent = `集計項目: ${$('metric').value || '-'} / 金額単位: ${unitLabel()}`;
+      $('renderInfo').textContent = `${formatInteger(rows.length)} / ${formatInteger(view.rows.length)} 件表示`;
+
+      if (view.type === 'group') {
+        renderGroupTable(view, rows);
+      } else {
+        renderProjectTable(view, rows);
+      }
+    }
+
+    function renderProjectTable(view, rows) {
+      const table = $('resultTable');
+      const alertHead = view.type === 'alerts' ? '<th>抽出区分</th>' : '';
+      table.querySelector('thead').innerHTML = `
+        <tr>
+          ${alertHead}
+          <th>プロジェクト名</th>
+          <th>PJコード</th>
+          <th>チーム</th>
+          <th>取引先</th>
+          <th>ランク</th>
+          ${view.months.map((month) => `<th>${escapeHtml(displayMonth(month))}</th>`).join('')}
+          <th class="total">総計</th>
+        </tr>
+      `;
+
+      table.querySelector('tbody').innerHTML = rows.map((row) => `
+        <tr>
+          ${view.type === 'alerts' ? `<td>${escapeHtml(row.alertType)}</td>` : ''}
+          <td class="name" title="${escapeHtml(row.name)}">${escapeHtml(row.name)}</td>
+          <td class="code">${escapeHtml(row.code)}</td>
+          <td>${escapeHtml(row.team || '')}</td>
+          <td>${escapeHtml(row.customer || '')}</td>
+          <td>${escapeHtml(row.rank || '')}</td>
+          ${view.months.map((month) => `<td class="num ${valueClass(row.months[month])}">${formatMoney(row.months[month])}</td>`).join('')}
+          <td class="num total ${valueClass(row.total)}">${formatMoney(row.total)}</td>
+        </tr>
+      `).join('') || '<tr><td colspan="99">表示対象がありません。</td></tr>';
+    }
+
+    function renderGroupTable(view, rows) {
+      const table = $('resultTable');
+      table.querySelector('thead').innerHTML = `
+        <tr>
+          <th rowspan="2">グループ</th>
+          <th rowspan="2">項目</th>
+          ${view.months.map((month) => `<th colspan="5">${escapeHtml(displayMonth(month))}</th>`).join('')}
+        </tr>
+        <tr>
+          ${view.months.map(() => '<th>予算</th><th>前回</th><th>今回</th><th>予算比</th><th>前回比</th>').join('')}
+        </tr>
+      `;
+
+      table.querySelector('tbody').innerHTML = rows.map((row) => {
+        const className = PROFIT_METRICS.has(row.metric)
+          ? 'profit-row'
+          : SECTION_METRICS.has(row.metric) ? 'section-row' : '';
+        return `
+          <tr class="${className}">
+            <td>${escapeHtml(row.group)}</td>
+            <td class="name">${escapeHtml(row.metric)}</td>
+            ${view.months.map((month) => {
+              const value = row.values[month] || {};
+              return `
+                <td class="num">${formatMoney(value.budget)}</td>
+                <td class="num">${formatMoney(value.previous)}</td>
+                <td class="num">${formatMoney(value.current)}</td>
+                <td class="num ${valueClass(value.budgetDiff)}">${formatMoney(value.budgetDiff)}</td>
+                <td class="num ${valueClass(value.previousDiff)}">${formatMoney(value.previousDiff)}</td>
+              `;
+            }).join('')}
+          </tr>
+        `;
+      }).join('') || '<tr><td colspan="99">表示対象がありません。</td></tr>';
+    }
+
+    function exportCsv() {
+      if (!state.currentView) return;
+      const view = state.currentView;
+      const rows = limitedRows(view.rows);
+      let lines = [];
+
+      if (view.type === 'group') {
+        const header = ['グループ', '項目'];
+        view.months.forEach((month) => {
+          header.push(`${displayMonth(month)}_予算`, `${displayMonth(month)}_前回`, `${displayMonth(month)}_今回`, `${displayMonth(month)}_予算比`, `${displayMonth(month)}_前回比`);
+        });
+        lines = [header, ...rows.map((row) => {
+          const line = [row.group, row.metric];
+          view.months.forEach((month) => {
+            const value = row.values[month] || {};
+            line.push(value.budget || 0, value.previous || 0, value.current || 0, value.budgetDiff || 0, value.previousDiff || 0);
+          });
+          return line;
+        })];
+      } else {
+        const header = view.type === 'alerts'
+          ? ['抽出区分', 'プロジェクト名', 'PJコード', 'チーム', '取引先', 'ランク']
+          : ['プロジェクト名', 'PJコード', 'チーム', '取引先', 'ランク'];
+        header.push(...view.months.map(displayMonth), '総計');
+
+        lines = [header, ...rows.map((row) => {
+          const base = view.type === 'alerts'
+            ? [row.alertType, row.name, row.code, row.team, row.customer, row.rank]
+            : [row.name, row.code, row.team, row.customer, row.rank];
+          return [...base, ...view.months.map((month) => row.months[month] || 0), row.total || 0];
+        })];
+      }
+
+      const csv = lines
+        .map((line) => line.map((cell) => `"${String(cell ?? '').replace(/"/g, '""')}"`).join(','))
+        .join('\r\n');
+      const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = `売上管理_${TAB_LABELS[state.activeTab]}_${new Date().toISOString().slice(0, 10).replaceAll('-', '')}.csv`;
+      link.click();
+      URL.revokeObjectURL(link.href);
+    }
+
+    function resetFilters() {
+      ['fiscalYear', 'team', 'businessType', 'rank', 'customer'].forEach((id) => {
+        $(id).value = 'all';
+      });
+      $('query').value = '';
+      $('projectStart').value = '';
+      $('projectEnd').value = '';
+      $('limit').value = '100';
+      applyView();
+    }
+
+    function setStatus(text) {
+      $('status').textContent = text;
+    }
+
+    function showMessage(text, type = 'info') {
+      const message = $('message');
+      message.textContent = text;
+      message.className = text ? `message show ${type}` : 'message';
+    }
+
+    function debounce(fn, delay) {
+      let timer = 0;
+      return (...args) => {
+        clearTimeout(timer);
+        timer = setTimeout(() => fn(...args), delay);
+      };
+    }
+
+    $('folderBtn').addEventListener('click', loadFromFolder);
+    $('manualToggle').addEventListener('click', () => $('manualLoader').classList.toggle('open'));
+    $('manualLoadBtn').addEventListener('click', loadFromManualFiles);
+    $('resetBtn').addEventListener('click', resetFilters);
+    $('exportBtn').addEventListener('click', exportCsv);
+    $('query').addEventListener('input', debounce(applyView, 160));
+    $('query').addEventListener('blur', saveSearchHistory);
+
+    ['metric', 'fiscalYear', 'team', 'businessType', 'rank', 'customer', 'limit', 'projectStart', 'projectEnd', 'unit']
+      .forEach((id) => $(id).addEventListener('change', applyView));
+
+    document.querySelectorAll('input[name="period"]').forEach((radio) => {
+      radio.addEventListener('change', applyView);
+    });
+
+    document.querySelectorAll('.tab').forEach((button) => {
+      button.addEventListener('click', () => {
+        document.querySelectorAll('.tab').forEach((tab) => tab.classList.remove('active'));
+        button.classList.add('active');
+        state.activeTab = button.dataset.tab;
+        $('periodControls').classList.toggle('show', state.activeTab === 'groupMonthly');
+        applyView();
+      });
+    });
+
+    restoreSavedFolder();
+  </script>
+</body>
+</html>
